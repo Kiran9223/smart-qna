@@ -1,0 +1,34 @@
+import json
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    DATABASE_URL: str
+    SECRET_KEY: str
+    ENVIRONMENT: str = "development"
+    CORS_ORIGINS: str = '["http://localhost:5173"]'
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # AWS settings (used only in production)
+    AWS_REGION: str = "us-east-1"
+    S3_BUCKET_ATTACHMENTS: str = ""
+    SQS_NOTIFICATION_QUEUE_URL: str = ""
+    COGNITO_USER_POOL_ID: str = ""
+    COGNITO_APP_CLIENT_ID: str = ""
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        try:
+            parsed = json.loads(self.CORS_ORIGINS)
+            if isinstance(parsed, list):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return [o.strip() for o in self.CORS_ORIGINS.split(",")]
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()

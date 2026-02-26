@@ -1,0 +1,16 @@
+services:
+  backend:
+    image: <aws_account_id>.dkr.ecr.<region>.amazonaws.com/smartqna-backend:latest
+    ports:
+      - "80:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://<user>:<pass>@<rds-endpoint>:5432/smartqna
+      SECRET_KEY: ${SECRET_KEY}
+      ENVIRONMENT: production
+      CORS_ORIGINS: '["https://<cloudfront-domain>"]'
+      AWS_REGION: us-east-1
+      S3_BUCKET_ATTACHMENTS: smartqna-attachments
+      SQS_NOTIFICATION_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/xxxx/smartqna-notifications
+      COGNITO_USER_POOL_ID: us-east-1_XXXXXXX
+      COGNITO_APP_CLIENT_ID: xxxxxxxxxxxxxxxxx
+    restart: always

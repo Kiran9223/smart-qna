@@ -1,0 +1,79 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env.local
+
+# ─── Environment / secrets ────────────────────────────────────────────────────
+.env
+backend/.env
+*.env
+
+# ─── Uploads (local file storage) ─────────────────────────────────────────────
+backend/uploads/
+
+# ─── Alembic compiled ─────────────────────────────────────────────────────────
+# Keep versions/ tracked, ignore only compiled cache
+backend/alembic/__pycache__/
+
+# ─── Node / Frontend ──────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/build/
+*.local
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+# Keep docker-compose files tracked
+.docker/
+
+# ─── Terraform ────────────────────────────────────────────────────────────────
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+*.tfvars
+*.tfstate
+*.tfstate.*
+
+# ─── AWS ──────────────────────────────────────────────────────────────────────
+.aws/
+aws-exports.js
+
+# ─── IDE / editors ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Testing ──────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/

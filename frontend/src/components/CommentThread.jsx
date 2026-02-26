@@ -1,0 +1,80 @@
+import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../services/api.js";
+import { useAuth } from "../hooks/useAuth.js";
+import toast from "react-hot-toast";
+
+export default function CommentThread({ comments, postId, answerId }) {
+  const { user } = useAuth();
+  const [newComment, setNewComment] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const queryClient = useQueryClient();
+
+  const endpoint = postId
+    ? `/posts/${postId}/comments`
+    : `/answers/${answerId}/comments`;
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (body) => api.post(endpoint, { body }).then((r) => r.data),
+    onSuccess: () => {
+      setNewComment("");
+      setShowForm(false);
+      queryClient.invalidateQueries({ queryKey: ["post"] });
+      toast.success("Comment added");
+    },
+    onError: (err) => toast.error(err.response?.data?.detail || "Failed to add comment"),
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    mutate(newComment.trim());
+  };
+
+  return (
+    <div className="mt-3 border-t border-gray-100 pt-3">
+      {comments?.map((comment) => (
+        <div key={comment.comment_id} className="flex gap-2 py-1.5 text-sm">
+          <div className="w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
+            {comment.author?.display_name[0]?.toUpperCase()}
+          </div>
+          <div>
+            <span className="text-gray-700">{comment.body}</span>
+            <span className="text-gray-400 text-xs ml-2">
+              — {comment.author?.display_name},{" "}
+              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {user && (
+        showForm ? (
+          <form onSubmit={handleSubmit} className="mt-2 flex gap-2">
+            <input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="input flex-1 text-sm py-1"
+              autoFocus
+            />
+            <button type="submit" disabled={isPending} className="btn-primary text-xs py-1">
+              {isPending ? "..." : "Add"}
+            </button>
+            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-xs py-1">
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setShowForm(true)}
+            className="text-xs text-blue-600 hover:text-blue-700 mt-1"
+          >
+            Add a comment
+          </button>
+        )
+      )}
+    </div>
+  );
+}
