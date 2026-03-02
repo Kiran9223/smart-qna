@@ -21,9 +21,11 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://smartqna:localdev123@postgres:5432/smartqna
-      SECRET_KEY: local-dev-secret-key-change-in-production
       ENVIRONMENT: development
       CORS_ORIGINS: '["http://localhost:5173"]'
+      COGNITO_REGION: us-east-1
+      COGNITO_USER_POOL_ID: us-east-1_FYVTuevQ9
+      COGNITO_APP_CLIENT_ID: 7r4nc65f89pg5adl442fufrig8
     depends_on:
       postgres:
         condition: service_healthy

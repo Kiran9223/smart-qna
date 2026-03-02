@@ -1,45 +1,25 @@
 import axios from "axios";
+import { getCurrentSession } from "./cognito.js";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1",
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(async (config) => {
+  const session = await getCurrentSession();
+  if (session) {
+    config.headers.Authorization = `Bearer ${session.getAccessToken().getJwtToken()}`;
+  }
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const refreshToken = localStorage.getItem("refresh_token");
-
-      if (refreshToken) {
-        try {
-          const resp = await axios.post(
-            `${api.defaults.baseURL}/auth/refresh`,
-            { refresh_token: refreshToken }
-          );
-          const newToken = resp.data.access_token;
-          localStorage.setItem("access_token", newToken);
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return api(originalRequest);
-        } catch {
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          window.location.href = "/login";
-        }
-      } else {
-        localStorage.removeItem("access_token");
-        window.location.href = "/login";
-      }
+  (error) => {
+    const onAuthPage = ["/login", "/register"].includes(window.location.pathname);
+    if (error.response?.status === 401 && !onAuthPage) {
+      window.location.href = "/login";
     }
-
     return Promise.reject(error);
   }
 );

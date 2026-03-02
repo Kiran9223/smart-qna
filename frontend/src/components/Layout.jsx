@@ -4,7 +4,7 @@ import NotificationBell from "./NotificationBell.jsx";
 import SearchBar from "./SearchBar.jsx";
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -36,17 +36,22 @@ export default function Layout() {
                   <div className="relative group">
                     <button className="flex items-center gap-2 rounded-full p-1 hover:bg-gray-100 transition-colors">
                       <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
-                        {user.display_name[0].toUpperCase()}
+                        {(user.display_name || user.email || "U")[0].toUpperCase()}
                       </div>
                     </button>
                     <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                       <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-                        <p className="font-medium text-gray-900 truncate">{user.display_name}</p>
+                        <p className="font-medium text-gray-900 truncate">{user.display_name || user.email}</p>
                         <p className="truncate">{user.email}</p>
                       </div>
                       <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                         Profile
                       </Link>
+                      {role === "ADMIN" && (
+                        <Link to="/admin/users" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                          Admin Panel
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"

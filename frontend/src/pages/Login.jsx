@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
-import api from "../services/api.js";
+import { signIn } from "../services/cognito.js";
 import toast from "react-hot-toast";
 
 export default function Login() {
@@ -16,12 +16,12 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", form);
-      login(res.data.access_token, res.data.refresh_token, res.data.user);
+      const session = await signIn(form.email, form.password);
+      await login(session);
       toast.success("Welcome back!");
       navigate(from, { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Invalid credentials");
+      toast.error(err.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }

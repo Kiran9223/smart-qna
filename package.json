@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "amazon-cognito-identity-js": "^6.3.16",
+    "jwt-decode": "^4.0.0"
+  }
+}

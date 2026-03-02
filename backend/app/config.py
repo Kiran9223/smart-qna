@@ -4,18 +4,22 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    SECRET_KEY: str
     ENVIRONMENT: str = "development"
     CORS_ORIGINS: str = '["http://localhost:5173"]'
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # AWS settings (used only in production)
-    AWS_REGION: str = "us-east-1"
-    S3_BUCKET_ATTACHMENTS: str = ""
-    SQS_NOTIFICATION_QUEUE_URL: str = ""
+    # AWS / Cognito
+    COGNITO_REGION: str = "us-east-1"
     COGNITO_USER_POOL_ID: str = ""
     COGNITO_APP_CLIENT_ID: str = ""
+    S3_BUCKET_ATTACHMENTS: str = ""
+    SQS_NOTIFICATION_QUEUE_URL: str = ""
+
+    @property
+    def cognito_jwks_url(self) -> str:
+        return (
+            f"https://cognito-idp.{self.COGNITO_REGION}.amazonaws.com"
+            f"/{self.COGNITO_USER_POOL_ID}/.well-known/jwks.json"
+        )
 
     @property
     def cors_origins_list(self) -> list[str]:

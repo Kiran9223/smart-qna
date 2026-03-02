@@ -1,31 +1,29 @@
 import { useAuth } from "../hooks/useAuth.js";
 import { usePosts } from "../hooks/usePosts.js";
-
-const ROLE_COLORS = {
-  STUDENT: "bg-gray-100 text-gray-700",
-  TA: "bg-purple-100 text-purple-700",
-  ADMIN: "bg-red-100 text-red-700",
-};
+import RoleBadge from "../components/RoleBadge.jsx";
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { data } = usePosts({ author_id: user?.user_id, size: 10 });
 
   if (!user) return null;
+
+  const displayName = user.display_name || user.email || "User";
+  const initial = displayName[0].toUpperCase();
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="card p-8 mb-6">
         <div className="flex items-center gap-6">
           <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-md">
-            {user.display_name[0].toUpperCase()}
+            {initial}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{user.display_name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
             <p className="text-gray-500 mt-0.5">{user.email}</p>
-            <span className={`badge mt-2 ${ROLE_COLORS[user.role] || ROLE_COLORS.STUDENT}`}>
-              {user.role}
-            </span>
+            <div className="mt-2">
+              <RoleBadge role={role} />
+            </div>
           </div>
         </div>
 

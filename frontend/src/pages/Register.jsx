@@ -1,29 +1,32 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
-import api from "../services/api.js";
+import { signUp, signIn } from "../services/cognito.js";
 import toast from "react-hot-toast";
 
+const ROLES = [
+  { value: "STUDENT", label: "Student" },
+  { value: "TA", label: "Teaching Assistant" },
+  { value: "ADMIN", label: "Administrator" },
+];
+
 export default function Register() {
-  const [form, setForm] = useState({ email: "", display_name: "", password: "" });
+  const [form, setForm] = useState({ email: "", display_name: "", password: "", role: "STUDENT" });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post("/auth/register", form);
-      const res = await api.post("/auth/login", {
-        email: form.email,
-        password: form.password,
-      });
-      login(res.data.access_token, res.data.refresh_token, res.data.user);
+      await signUp(form.email, form.password, form.display_name, form.role);
+      const session = await signIn(form.email, form.password);
+      await login(session);
       toast.success("Account created! Welcome!");
       navigate("/");
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Registration failed");
+      toast.error(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -37,7 +40,7 @@ export default function Register() {
           <h1 className="text-2xl font-bold text-gray-900 mt-2">Create your account</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
             <input
@@ -72,6 +75,25 @@ export default function Register() {
               required
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              className="input"
+            >
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {form.role !== "STUDENT" && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+              Selecting a role you are not authorized for may result in account suspension.
+            </div>
+          )}
+
           <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
             {loading ? "Creating account..." : "Create account"}
           </button>
