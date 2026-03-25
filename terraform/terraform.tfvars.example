@@ -1,0 +1,22 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is gitignored — never commit it.
+
+aws_region    = "us-west-1"
+app_name      = "smartqna"
+ec2_instance_type = "t3.micro"
+
+# SSH public key is read directly from ../smartqna-deployer.pub by Terraform.
+# Make sure that file exists in the project root before running terraform apply.
+
+# Cognito — already provisioned, keep these as-is
+cognito_user_pool_id  = "us-east-1_FYVTuevQ9"
+cognito_app_client_id = "7r4nc65f89pg5adl442fufrig8"
+
+# FastAPI secret key — generate with: python -c "import secrets; print(secrets.token_hex(32))"
+secret_key = "replace-with-a-long-random-string"
+
+# Provided by the teammate who sets up RDS
+db_url = "postgresql+asyncpg://smartqna:<password>@<rds-endpoint>:5432/smartqna"
+
+# Provided by the teammate who sets up SQS
+sqs_queue_url = "https://sqs.us-west-1.amazonaws.com/<account-id>/smartqna-notifications"

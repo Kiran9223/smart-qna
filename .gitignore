@@ -58,6 +58,10 @@ terraform/terraform.tfvars
 .aws/
 aws-exports.js
 
+# ─── SSH keys (never commit private keys) ─────────────────────────────────────
+smartqna-deployer
+smartqna-deployer.pub
+
 # ─── IDE / editors ────────────────────────────────────────────────────────────
 .vscode/
 .idea/

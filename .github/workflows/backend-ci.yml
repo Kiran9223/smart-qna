@@ -1,12 +1,15 @@
 name: Backend CI/CD
+
 on:
   push:
     branches: [main]
     paths: [backend/**]
 
 jobs:
+  # ── Job 1: Run tests against a real Postgres container ────────────────────
   test:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:15
@@ -20,45 +23,129 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install dependencies
         run: pip install -r backend/requirements.txt
+
       - name: Run migrations
         run: cd backend && alembic upgrade head
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_smartqna
           SECRET_KEY: test-secret
+
       - name: Run tests
         run: cd backend && pytest -v
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_smartqna
           SECRET_KEY: test-secret
 
+  # ── Job 2: Build → push ECR → deploy to both EC2s ─────────────────────────
   deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+
     steps:
       - uses: actions/checkout@v4
+
+      # Write the SSH private key so scp/ssh commands can authenticate
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST_1 }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST_2 }} >> ~/.ssh/known_hosts
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: us-west-1
+
       - uses: aws-actions/amazon-ecr-login@v2
-      - name: Build & push Docker image to ECR
+
+      # Tag with both :latest and :<git-sha> for easy rollback
+      - name: Build and push Docker image to ECR
         run: |
-          docker build -t smartqna-backend backend/
-          docker tag smartqna-backend:latest ${{ secrets.ECR_REPO }}:latest
+          docker build -t ${{ secrets.ECR_REPO }}:latest \
+                       -t ${{ secrets.ECR_REPO }}:${{ github.sha }} \
+                       backend/
           docker push ${{ secrets.ECR_REPO }}:latest
-      - name: Deploy to EC2
+          docker push ${{ secrets.ECR_REPO }}:${{ github.sha }}
+
+      # Generate a filled-in .env file that docker-compose.prod.yml reads
+      - name: Generate .env file for EC2
+        env:
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
+          COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+          COGNITO_APP_CLIENT_ID: ${{ secrets.COGNITO_APP_CLIENT_ID }}
+          S3_BUCKET_ATTACHMENTS: ${{ secrets.S3_FRONTEND_BUCKET != '' && 'smartqna-attachments' || 'smartqna-attachments' }}
+          SQS_NOTIFICATION_QUEUE_URL: ${{ secrets.SQS_QUEUE_URL }}
         run: |
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REPO }}
-            docker pull ${{ secrets.ECR_REPO }}:latest
-            cd /home/ec2-user/smartqna && docker compose -f docker-compose.prod.yml up -d
+          cat > /tmp/smartqna.env << EOF
+          ECR_REPO=${ECR_REPO}
+          DATABASE_URL=${DATABASE_URL}
+          SECRET_KEY=${SECRET_KEY}
+          CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}
+          COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+          COGNITO_APP_CLIENT_ID=${COGNITO_APP_CLIENT_ID}
+          S3_BUCKET_ATTACHMENTS=smartqna-attachments
+          SQS_NOTIFICATION_QUEUE_URL=${SQS_NOTIFICATION_QUEUE_URL}
           EOF
+
+      # Deploy EC2 #1 — also runs alembic migrations after pulling the new image
+      - name: Deploy to EC2 #1 (with migrations)
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST_1 }}
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+        run: |
+          scp /tmp/smartqna.env ec2-user@${EC2_HOST}:/home/ec2-user/smartqna/.env
+          scp docker-compose.prod.yml ec2-user@${EC2_HOST}:/home/ec2-user/smartqna/docker-compose.prod.yml
+
+          ssh ec2-user@${EC2_HOST} bash -s << 'ENDSSH'
+            set -e
+            cd /home/ec2-user/smartqna
+
+            # Pull latest image from ECR (instance role grants ECR read access)
+            aws ecr get-login-password --region us-west-1 \
+              | docker login --username AWS --password-stdin $(grep ECR_REPO .env | cut -d= -f2)
+
+            docker compose --env-file .env -f docker-compose.prod.yml pull
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Run migrations once (only on EC2 #1)
+            sleep 5
+            docker compose --env-file .env -f docker-compose.prod.yml exec -T backend \
+              alembic upgrade head
+          ENDSSH
+
+      # Deploy EC2 #2 — pull and restart only (migrations already ran on #1)
+      - name: Deploy to EC2 #2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST_2 }}
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+        run: |
+          scp /tmp/smartqna.env ec2-user@${EC2_HOST}:/home/ec2-user/smartqna/.env
+          scp docker-compose.prod.yml ec2-user@${EC2_HOST}:/home/ec2-user/smartqna/docker-compose.prod.yml
+
+          ssh ec2-user@${EC2_HOST} bash -s << 'ENDSSH'
+            set -e
+            cd /home/ec2-user/smartqna
+
+            aws ecr get-login-password --region us-west-1 \
+              | docker login --username AWS --password-stdin $(grep ECR_REPO .env | cut -d= -f2)
+
+            docker compose --env-file .env -f docker-compose.prod.yml pull
+            docker compose --env-file .env -f docker-compose.prod.yml up -d --remove-orphans
+          ENDSSH

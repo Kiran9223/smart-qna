@@ -1,28 +1,52 @@
 name: Frontend CI/CD
+
 on:
   push:
     branches: [main]
     paths: [frontend/**]
 
 jobs:
-  deploy:
+  # ── Job 1: Build (fast-fail before touching AWS) ──────────────────────────
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install & build
-        run: cd frontend && npm ci && npm run build
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      # Vite bakes these env vars into the static bundle at build time.
+      # VITE_API_URL points through CloudFront so all traffic (frontend + API)
+      # uses the same HTTPS domain — no mixed-content or CORS issues.
+      - name: Build
+        run: cd frontend && npm run build
         env:
-          VITE_API_URL: https://${{ secrets.EC2_HOST }}/api/v1
+          VITE_API_URL: https://${{ secrets.CLOUDFRONT_DOMAIN }}/api/v1
+          VITE_COGNITO_REGION: us-east-1
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.COGNITO_APP_CLIENT_ID }}
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: us-west-1
+
+      # Sync built files to S3; --delete removes files no longer in the build
       - name: Sync to S3
-        run: aws s3 sync frontend/dist s3://${{ secrets.S3_FRONTEND_BUCKET }} --delete
+        run: |
+          aws s3 sync frontend/dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable"
+
+      # Bust the CloudFront cache so users see the new version immediately
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
