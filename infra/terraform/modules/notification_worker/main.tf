@@ -5,7 +5,6 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
-data "aws_region" "current" {}
 
 data "aws_sqs_queue" "notification" {
   name = var.notification_queue_name
@@ -96,7 +95,6 @@ resource "aws_lambda_function" "notification_worker" {
       DB_NAME      = var.db_name
       DB_USER      = var.db_user
       DB_PASSWORD  = var.db_password
-      AWS_REGION   = var.aws_region
       SENDER_EMAIL = var.sender_email
     }
   }
