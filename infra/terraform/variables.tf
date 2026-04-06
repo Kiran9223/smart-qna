@@ -57,7 +57,7 @@ variable "notification_worker_image_uri" {
 }
 
 variable "enable_notification_queue_trigger" {
-  description = "Whether to attach the SQS queue trigger to the notification worker Lambda"
+  description = "Whether to enable the SQS -> Lambda event source mapping"
   type        = bool
   default     = false
 }
