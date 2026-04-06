@@ -55,3 +55,9 @@ variable "notification_worker_image_uri" {
   description = "Full ECR image URI for the notification worker Lambda"
   type        = string
 }
+
+variable "enable_notification_queue_trigger" {
+  description = "Whether to attach the SQS queue trigger to the notification worker Lambda"
+  type        = bool
+  default     = false
+}

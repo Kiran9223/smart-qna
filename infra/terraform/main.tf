@@ -16,4 +16,6 @@ module "notification_worker" {
   db_password                   = var.db_password
   sender_email                  = var.sender_email
   notification_worker_image_uri = var.notification_worker_image_uri
+
+  enable_notification_queue_trigger = var.enable_notification_queue_trigger
 }
