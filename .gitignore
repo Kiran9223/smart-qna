@@ -77,3 +77,8 @@ coverage.xml
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 logs/
+infra/terraform/.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
