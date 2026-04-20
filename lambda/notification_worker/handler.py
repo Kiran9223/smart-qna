@@ -16,6 +16,7 @@ ses = boto3.client("ses")
 def get_db_connection():
     return psycopg2.connect(
         host=os.environ["DB_HOST"],
+        port=int(os.environ.get("DB_PORT", "5432")),
         dbname=os.environ["DB_NAME"],
         user=os.environ["DB_USER"],
         password=os.environ["DB_PASSWORD"],
@@ -27,7 +28,7 @@ def handler(event, context):
     cursor = conn.cursor()
 
     try:
-        for record in event["Records"]:
+        for record in event.get("Records", []):
             body = json.loads(record["body"])
 
             cursor.execute(
@@ -46,9 +47,13 @@ def handler(event, context):
                 ),
             )
 
-            if body.get("send_email") and body.get("recipient_email"):
+            if (
+                os.environ.get("SENDER_EMAIL")
+                and body.get("send_email")
+                and body.get("recipient_email")
+            ):
                 ses.send_email(
-                    Source="noreply@smartqna.example.com",
+                    Source=os.environ["SENDER_EMAIL"],
                     Destination={"ToAddresses": [body["recipient_email"]]},
                     Message={
                         "Subject": {"Data": f"Smart Q&A: {body['message']}"},
@@ -57,6 +62,7 @@ def handler(event, context):
                 )
 
         conn.commit()
+        return {"statusCode": 200, "processed": len(event.get("Records", []))}
     except Exception:
         conn.rollback()
         raise
