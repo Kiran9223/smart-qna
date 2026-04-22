@@ -1,34 +1,13 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: smartqna
-      POSTGRES_USER: smartqna
-      POSTGRES_PASSWORD: localdev123
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartqna"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: ./backend
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://smartqna:localdev123@postgres:5432/smartqna
-      ENVIRONMENT: development
-      CORS_ORIGINS: '["http://localhost:5173"]'
-      COGNITO_REGION: us-east-1
-      COGNITO_USER_POOL_ID: us-east-1_FYVTuevQ9
-      COGNITO_APP_CLIENT_ID: 7r4nc65f89pg5adl442fufrig8
-    depends_on:
-      postgres:
-        condition: service_healthy
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     volumes:
       - ./backend/app:/app/app
 
@@ -42,6 +21,3 @@ services:
       - ./frontend/src:/app/src
     depends_on:
       - backend
-
-volumes:
-  pgdata:

@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes radar-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes scan-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+@keyframes brain-ping {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+  50%       { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+}
+
+@keyframes result-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.gear-cw {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: radar-spin 3s linear infinite;
+}
+
+.gear-ccw {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: radar-spin 2s linear infinite reverse;
+}
+
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 antialiased;

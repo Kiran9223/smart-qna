@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     S3_BUCKET_ATTACHMENTS: str = ""
     SQS_NOTIFICATION_QUEUE_URL: str = ""
 
+    # AWS / Bedrock
+    AWS_REGION: str = "us-east-1"
+    BEDROCK_MODEL_ID: str = "amazon.titan-embed-text-v1"
+
     @property
     def cognito_jwks_url(self) -> str:
         return (

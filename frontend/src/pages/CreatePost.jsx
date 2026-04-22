@@ -1,14 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useCreatePost } from "../hooks/usePosts.js";
 import api from "../services/api.js";
 import toast from "react-hot-toast";
+import SimilarQuestionsPanel from "../components/SimilarQuestionsPanel.jsx";
 
 export default function CreatePost() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ title: "", body: "", tag_ids: [] });
   const { mutate, isPending } = useCreatePost();
+  const [similarPosts, setSimilarPosts] = useState([]);
+  const [isFetchingSimilar, setIsFetchingSimilar] = useState(false);
+  const debounceTimer = useRef(null);
+
+  useEffect(() => {
+    const text = form.title.trim();
+    if (text.length < 15) {
+      setSimilarPosts([]);
+      return;
+    }
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(async () => {
+      setIsFetchingSimilar(true);
+      try {
+        const [res] = await Promise.all([
+          api.post("/posts/similar", { text }),
+          new Promise((resolve) => setTimeout(resolve, 2800)),
+        ]);
+        setSimilarPosts(res.data.results || []);
+      } catch {
+        setSimilarPosts([]);
+      } finally {
+        setIsFetchingSimilar(false);
+      }
+    }, 600);
+    return () => clearTimeout(debounceTimer.current);
+  }, [form.title]);
 
   const { data: tags = [] } = useQuery({
     queryKey: ["tags"],
@@ -57,6 +85,12 @@ export default function CreatePost() {
           />
           <p className="text-xs text-gray-400 mt-1">{form.title.length}/300</p>
         </div>
+
+        {/* AI Similar Questions Panel */}
+        <SimilarQuestionsPanel
+          isLoading={isFetchingSimilar}
+          results={similarPosts}
+        />
 
         <div className="card p-5">
           <label className="block text-sm font-semibold text-gray-700 mb-1">

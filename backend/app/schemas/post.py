@@ -51,3 +51,19 @@ class PostListResponse(BaseModel):
     page: int
     size: int
     pages: int
+
+
+class SimilarPostsRequest(BaseModel):
+    text: str
+
+
+class SimilarPostResult(BaseModel):
+    post_id: uuid.UUID
+    title: str
+    similarity: float
+
+    model_config = {"from_attributes": True}
+
+
+class SimilarPostsResponse(BaseModel):
+    results: list[SimilarPostResult]

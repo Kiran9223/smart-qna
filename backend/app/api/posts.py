@@ -9,12 +9,27 @@ from app.core.dependencies import get_current_user, get_optional_user, require_r
 from app.models.user import User
 from app.models.post import Post
 from app.models.vote import Vote
-from app.schemas.post import PostCreate, PostUpdate, PostResponse, PostDetailResponse, PostListResponse, PostSummary
+from app.schemas.post import PostCreate, PostUpdate, PostResponse, PostDetailResponse, PostListResponse, PostSummary, SimilarPostsRequest, SimilarPostsResponse
 from app.services.post_service import create_post, update_post, get_post_with_relations
 from app.services.search_service import build_post_query
+from app.services.similarity_service import find_similar_posts
 from app.utils.pagination import paginate
 
 router = APIRouter()
+
+
+@router.post("/similar", response_model=SimilarPostsResponse)
+async def get_similar_posts(
+    data: SimilarPostsRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Given question text, returns the top 5 semantically similar existing posts.
+    Called by the frontend before a user submits a question.
+    No authentication required.
+    """
+    results = await find_similar_posts(db, data.text)
+    return SimilarPostsResponse(results=results)
 
 
 @router.post("", response_model=PostResponse, status_code=201)

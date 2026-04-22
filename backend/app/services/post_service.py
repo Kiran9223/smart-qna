@@ -9,6 +9,7 @@ from app.models.answer import Answer
 from app.models.comment import Comment
 from app.models.tag import Tag
 from app.schemas.post import PostCreate, PostUpdate
+from app.core.bedrock import generate_embedding
 
 
 async def get_post_with_relations(db: AsyncSession, post_id: uuid.UUID) -> Post:
@@ -41,6 +42,13 @@ async def create_post(db: AsyncSession, data: PostCreate, author_id: uuid.UUID) 
     db.add(post)
     await db.flush()
     await db.refresh(post)
+
+    # Generate and store semantic embedding for AI similarity search
+    embedding = await generate_embedding(f"{data.title}\n\n{data.body}")
+    if embedding:
+        post.embedding = embedding
+        await db.flush()
+
     return post
 
 
