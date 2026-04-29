@@ -119,6 +119,13 @@ jobs:
             set -e
             cd /home/ec2-user/smartqna
 
+            if ! command -v docker-compose >/dev/null 2>&1; then
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            docker-compose version
+
             # Pull latest image from ECR (instance role grants ECR read access)
             aws ecr get-login-password --region us-west-1 \
               | docker login --username AWS --password-stdin $(grep ECR_REPO .env-prod | cut -d= -f2)
@@ -146,12 +153,20 @@ jobs:
             set -e
             cd /home/ec2-user/smartqna
 
+            if ! command -v docker-compose >/dev/null 2>&1; then
+              sudo curl -L "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            docker-compose version
+
             aws ecr get-login-password --region us-west-1 \
               | docker login --username AWS --password-stdin $(grep ECR_REPO .env-prod | cut -d= -f2)
 
             docker-compose --env-file .env-prod -f docker-compose.prod.yml pull
             docker-compose --env-file .env-prod -f docker-compose.prod.yml up -d --remove-orphans
           ENDSSH
+
 
 
 
