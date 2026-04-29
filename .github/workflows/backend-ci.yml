@@ -1,6 +1,7 @@
 name: Backend CI/CD
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths: [backend/**]
@@ -149,5 +150,6 @@ jobs:
             docker compose --env-file .env-prod -f docker-compose.prod.yml pull
             docker compose --env-file .env-prod -f docker-compose.prod.yml up -d --remove-orphans
           ENDSSH
+
 
 
