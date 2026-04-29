@@ -12,7 +12,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg15
         env:
           POSTGRES_DB: test_smartqna
           POSTGRES_USER: test
@@ -149,4 +149,5 @@ jobs:
             docker compose --env-file .env-prod -f docker-compose.prod.yml pull
             docker compose --env-file .env-prod -f docker-compose.prod.yml up -d --remove-orphans
           ENDSSH
+
 
