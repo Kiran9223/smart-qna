@@ -13,6 +13,8 @@ class Notification(Base):
     type: Mapped[str] = mapped_column(String(50), nullable=False)  # ANSWER, COMMENT, VOTE, ACCEPTED
     reference_id: Mapped[uuid.UUID | None] = mapped_column()
     message: Mapped[str] = mapped_column(Text, nullable=False)
+    source_event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    delivery_source: Mapped[str] = mapped_column(String(20), nullable=False, default="direct")
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -23,4 +25,5 @@ class Notification(Base):
     __table_args__ = (
         Index("idx_notifications_user_id", "user_id"),
         Index("idx_notifications_is_read", "is_read"),
+        Index("uq_notifications_source_event_id", "source_event_id", unique=True),
     )

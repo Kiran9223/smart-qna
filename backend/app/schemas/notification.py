@@ -8,6 +8,7 @@ class NotificationResponse(BaseModel):
     type: str
     reference_id: uuid.UUID | None = None
     message: str
+    delivery_source: str | None = None
     is_read: bool
     created_at: datetime
 

@@ -9,6 +9,7 @@ ec2_instance_type = "t3.micro"
 # Make sure that file exists in the project root before running terraform apply.
 
 # Cognito — already provisioned, keep these as-is
+cognito_region        = "us-east-1"
 cognito_user_pool_id  = "us-east-1_FYVTuevQ9"
 cognito_app_client_id = "7r4nc65f89pg5adl442fufrig8"
 
@@ -20,3 +21,14 @@ db_url = "postgresql+asyncpg://smartqna:<password>@<rds-endpoint>:5432/smartqna"
 
 # Provided by the teammate who sets up SQS
 sqs_queue_url = "https://sqs.us-west-1.amazonaws.com/<account-id>/smartqna-notifications"
+
+# Notification microservice
+notification_service_environment = "prod"
+notification_db_host             = "<rds-endpoint>"
+notification_db_port             = 5432
+notification_db_name             = "smartqna"
+notification_db_user             = "smartqna_admin"
+notification_db_password         = "<db-password>"
+notification_sender_email        = ""
+notification_worker_image_uri    = "<account-id>.dkr.ecr.us-east-1.amazonaws.com/smartqna-prod-notifications-worker:latest"
+notification_api_image_uri       = "<account-id>.dkr.ecr.us-east-1.amazonaws.com/smartqna-prod-notifications-api:latest"
