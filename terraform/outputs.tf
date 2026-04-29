@@ -40,3 +40,23 @@ output "ec2_instance_2_ip" {
   description = "EC2 instance 2 public IP → GitHub Secret: EC2_HOST_2"
   value       = aws_instance.backend[1].public_ip
 }
+
+output "notification_queue_url" {
+  description = "Notification events SQS queue URL"
+  value       = module.notification_service.notification_queue_url
+}
+
+output "notification_api_url" {
+  description = "Notification API Gateway base URL"
+  value       = module.notification_service.notification_api_url
+}
+
+output "notification_worker_ecr_repository_url" {
+  description = "Notification worker ECR repository URL"
+  value       = module.notification_service.notification_worker_ecr_repository_url
+}
+
+output "notification_api_ecr_repository_url" {
+  description = "Notification API ECR repository URL"
+  value       = module.notification_service.notification_api_ecr_repository_url
+}

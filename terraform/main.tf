@@ -29,3 +29,33 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
+
+provider "aws" {
+  alias  = "notification"
+  region = var.notification_region
+}
+
+module "notification_service" {
+  source = "./modules/notification_service"
+  providers = {
+    aws = aws.notification
+  }
+
+  project_name = var.app_name
+  environment  = var.notification_service_environment
+
+  db_host     = var.notification_db_host
+  db_port     = var.notification_db_port
+  db_name     = var.notification_db_name
+  db_user     = var.notification_db_user
+  db_password = var.notification_db_password
+
+  sender_email = var.notification_sender_email
+
+  notification_worker_image_uri = var.notification_worker_image_uri
+  notification_api_image_uri    = var.notification_api_image_uri
+
+  cognito_region        = var.cognito_region
+  cognito_user_pool_id  = var.cognito_user_pool_id
+  cognito_app_client_id = var.cognito_app_client_id
+}
