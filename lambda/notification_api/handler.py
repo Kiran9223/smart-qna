@@ -9,6 +9,23 @@ from jose.exceptions import JWTError
 _jwks_cache = None
 
 
+def _allowed_origins() -> list[str]:
+    raw = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def _cors_headers(origin: str | None) -> dict:
+    allowed = _allowed_origins()
+    resolved_origin = origin if origin in allowed else (allowed[0] if allowed else "*")
+    return {
+        "Access-Control-Allow-Origin": resolved_origin,
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "authorization,content-type",
+        "Access-Control-Max-Age": "300",
+        "Vary": "Origin",
+    }
+
+
 def _json_response(status_code: int, payload: dict) -> dict:
     return {
         "statusCode": status_code,
@@ -151,36 +168,55 @@ def _mark_read(cursor, user_id: str, body: dict) -> None:
 
 
 def handler(event, context):
+    headers = event.get("headers", {}) or {}
+    origin = headers.get("origin") or headers.get("Origin")
+    method = event.get("requestContext", {}).get("http", {}).get("method", "")
+
+    if method == "OPTIONS":
+        return {
+            "statusCode": 204,
+            "headers": _cors_headers(origin),
+            "body": "",
+        }
+
     try:
-        headers = event.get("headers", {}) or {}
         auth_header = headers.get("authorization") or headers.get("Authorization")
         claims = _decode_token(auth_header)
     except (ValueError, JWTError):
-        return _json_response(401, {"detail": "Invalid or expired token"})
+        response = _json_response(401, {"detail": "Invalid or expired token"})
+        response["headers"].update(_cors_headers(origin))
+        return response
 
     conn = _get_db_connection()
     cursor = conn.cursor()
     try:
         user_id = _resolve_user_id(claims, cursor)
-        method = event.get("requestContext", {}).get("http", {}).get("method", "")
         path = event.get("rawPath", "")
         query = event.get("queryStringParameters") or {}
 
         if method == "GET" and path.endswith("/notifications"):
             items = _list_notifications(cursor, user_id, query)
-            return _json_response(200, items)
+            response = _json_response(200, items)
+            response["headers"].update(_cors_headers(origin))
+            return response
 
         if method == "GET" and path.endswith("/notifications/unread-count"):
             count = _get_unread_count(cursor, user_id)
-            return _json_response(200, {"count": count})
+            response = _json_response(200, {"count": count})
+            response["headers"].update(_cors_headers(origin))
+            return response
 
         if method == "POST" and path.endswith("/notifications/read"):
             body = json.loads(event.get("body") or "{}")
             _mark_read(cursor, user_id, body)
             conn.commit()
-            return _json_response(200, {"detail": "Marked as read"})
+            response = _json_response(200, {"detail": "Marked as read"})
+            response["headers"].update(_cors_headers(origin))
+            return response
 
-        return _json_response(404, {"detail": "Not found"})
+        response = _json_response(404, {"detail": "Not found"})
+        response["headers"].update(_cors_headers(origin))
+        return response
     finally:
         cursor.close()
         conn.close()

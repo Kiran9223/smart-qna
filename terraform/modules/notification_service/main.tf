@@ -146,6 +146,7 @@ resource "aws_lambda_function" "api" {
       COGNITO_REGION        = var.cognito_region
       COGNITO_USER_POOL_ID  = var.cognito_user_pool_id
       COGNITO_APP_CLIENT_ID = var.cognito_app_client_id
+      ALLOWED_ORIGINS       = join(",", var.allowed_origins)
     }
   }
 }
@@ -155,7 +156,7 @@ resource "aws_apigatewayv2_api" "notification" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = ["http://localhost:5173"]
+    allow_origins = var.allowed_origins
     allow_methods = ["GET", "POST", "OPTIONS"]
     allow_headers = ["authorization", "content-type"]
     max_age       = 300

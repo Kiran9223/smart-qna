@@ -32,3 +32,4 @@ notification_db_password         = "<db-password>"
 notification_sender_email        = ""
 notification_worker_image_uri    = "<account-id>.dkr.ecr.us-east-1.amazonaws.com/smartqna-prod-notifications-worker:latest"
 notification_api_image_uri       = "<account-id>.dkr.ecr.us-east-1.amazonaws.com/smartqna-prod-notifications-api:latest"
+notification_allowed_origins     = ["http://localhost:5173", "https://d2o2tfuqobkmjr.cloudfront.net"]

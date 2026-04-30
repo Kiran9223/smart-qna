@@ -52,3 +52,8 @@ variable "cognito_user_pool_id" {
 variable "cognito_app_client_id" {
   type = string
 }
+
+variable "allowed_origins" {
+  type    = list(string)
+  default = ["http://localhost:5173"]
+}

@@ -1,9 +1,44 @@
 """Semantic similarity search using pgvector and Amazon Bedrock."""
 import uuid
+import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.core.bedrock import generate_embedding
+
+
+async def _keyword_fallback_posts(
+    db: AsyncSession,
+    query_text: str,
+    limit: int,
+) -> list[dict]:
+    terms = [t for t in re.split(r"\W+", query_text.lower()) if len(t) >= 4][:5]
+    if not terms:
+        return []
+
+    like_clauses = []
+    params: dict[str, object] = {"limit": limit}
+    for index, term in enumerate(terms):
+        key = f"term_{index}"
+        params[key] = f"%{term}%"
+        like_clauses.append(f"LOWER(title) LIKE :{key}")
+
+    stmt = text(f"""
+        SELECT post_id, title
+        FROM posts
+        WHERE {" OR ".join(like_clauses)}
+        ORDER BY created_at DESC
+        LIMIT :limit
+    """)
+    result = await db.execute(stmt, params)
+    return [
+        {
+            "post_id": row.post_id,
+            "title": row.title,
+            "similarity": 0.55,
+        }
+        for row in result.fetchall()
+    ]
 
 
 async def find_similar_posts(
@@ -11,7 +46,7 @@ async def find_similar_posts(
     query_text: str,
     exclude_post_id: uuid.UUID | None = None,
     limit: int = 5,
-    min_similarity: float = 0.75,
+    min_similarity: float = 0.65,
 ) -> list[dict]:
     """
     Generates an embedding for query_text and finds the top `limit`
@@ -20,7 +55,7 @@ async def find_similar_posts(
     """
     embedding = await generate_embedding(query_text)
     if embedding is None:
-        return []
+        return await _keyword_fallback_posts(db, query_text, limit)
 
     embedding_str = "[" + ",".join(str(x) for x in embedding) + "]"
 
@@ -46,7 +81,7 @@ async def find_similar_posts(
 
     result = await db.execute(stmt, params)
 
-    return [
+    results = [
         {
             "post_id": row.post_id,
             "title": row.title,
@@ -55,3 +90,6 @@ async def find_similar_posts(
         for row in result.fetchall()
         if float(row.similarity) >= min_similarity
     ]
+    if results:
+        return results
+    return await _keyword_fallback_posts(db, query_text, limit)

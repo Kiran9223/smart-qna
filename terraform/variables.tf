@@ -117,3 +117,9 @@ variable "notification_api_image_uri" {
   type        = string
   default     = "placeholder"
 }
+
+variable "notification_allowed_origins" {
+  description = "Allowed CORS origins for notification API"
+  type        = list(string)
+  default     = ["http://localhost:5173"]
+}

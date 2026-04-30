@@ -1,4 +1,5 @@
 import uuid
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -15,6 +16,7 @@ from app.services.answer_service import accept_answer
 from app.services.notification_service import notify
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 async def _load_answer(db: AsyncSession, answer_id: uuid.UUID) -> Answer:
@@ -50,13 +52,16 @@ async def submit_answer(
     await db.flush()
 
     if post.author_id != current_user.user_id:
-        await notify(
-            db,
-            recipient_id=post.author_id,
-            type="ANSWER",
-            reference_id=answer.answer_id,
-            message=f"{current_user.display_name} answered your question: {post.title[:60]}",
-        )
+        try:
+            await notify(
+                db,
+                recipient_id=post.author_id,
+                type="ANSWER",
+                reference_id=answer.answer_id,
+                message=f"{current_user.display_name} answered your question: {post.title[:60]}",
+            )
+        except Exception:
+            logger.exception("Failed to publish answer notification")
 
     return await _load_answer(db, answer.answer_id)
 
@@ -92,13 +97,16 @@ async def accept_answer_endpoint(
     answer = await accept_answer(db, answer, current_user.user_id)
 
     if answer.author_id != current_user.user_id:
-        await notify(
-            db,
-            recipient_id=answer.author_id,
-            type="ACCEPTED",
-            reference_id=answer.answer_id,
-            message="Your answer was accepted!",
-        )
+        try:
+            await notify(
+                db,
+                recipient_id=answer.author_id,
+                type="ACCEPTED",
+                reference_id=answer.answer_id,
+                message="Your answer was accepted!",
+            )
+        except Exception:
+            logger.exception("Failed to publish accepted-answer notification")
 
     return await _load_answer(db, answer_id)
 

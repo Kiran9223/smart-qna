@@ -58,4 +58,5 @@ module "notification_service" {
   cognito_region        = var.cognito_region
   cognito_user_pool_id  = var.cognito_user_pool_id
   cognito_app_client_id = var.cognito_app_client_id
+  allowed_origins       = var.notification_allowed_origins
 }
