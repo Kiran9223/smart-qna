@@ -15,16 +15,14 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_SESSION_TOKEN: str = ""
     SQS_NOTIFICATION_QUEUE_URL: str = ""
     NOTIFICATION_DELIVERY_MODE: str = "auto"  # auto | direct | sqs
     NOTIFICATION_API_URL: str = ""
 
     # AWS / Bedrock
-    AWS_REGION: str = "us-east-1"
-    BEDROCK_MODEL_ID: str = "amazon.titan-embed-text-v1"
-    AWS_ACCESS_KEY_ID: str = ""
-    AWS_SECRET_ACCESS_KEY: str = ""
-    AWS_SESSION_TOKEN: str = ""
+    BEDROCK_REGION: str = "us-east-1"
+    BEDROCK_MODEL_ID: str = "amazon.titan-embed-text-v2:0"
 
     @property
     def cognito_jwks_url(self) -> str:

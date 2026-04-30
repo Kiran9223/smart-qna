@@ -13,7 +13,7 @@ def get_bedrock_client():
     if not _bedrock_client:
         _bedrock_client = boto3.client(
             "bedrock-runtime",
-            region_name=settings.AWS_REGION,
+            region_name=settings.BEDROCK_REGION or settings.AWS_REGION,
         )
     return _bedrock_client
 
@@ -45,7 +45,7 @@ async def generate_embedding(text: str) -> list[float] | None:
         logger.exception(
             "Bedrock embedding generation failed (model=%s, region=%s, input_chars=%s)",
             settings.BEDROCK_MODEL_ID,
-            settings.AWS_REGION,
+            settings.BEDROCK_REGION or settings.AWS_REGION,
             len(text),
         )
         return None  # graceful fallback — similarity search skips silently
