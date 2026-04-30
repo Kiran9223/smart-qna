@@ -1,4 +1,5 @@
 import uuid
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -11,6 +12,8 @@ from app.models.comment import Comment
 from app.models.tag import Tag
 from app.schemas.post import PostCreate, PostUpdate
 from app.core.bedrock import generate_embedding
+
+logger = logging.getLogger(__name__)
 
 
 async def get_post_with_relations(db: AsyncSession, post_id: uuid.UUID) -> Post:
@@ -50,6 +53,9 @@ async def create_post(db: AsyncSession, data: PostCreate, author_id: uuid.UUID) 
     if embedding:
         post.embedding = embedding
         await db.flush()
+        logger.info("Stored embedding for post %s", post.post_id)
+    else:
+        logger.warning("Embedding unavailable for post %s", post.post_id)
 
     return post
 

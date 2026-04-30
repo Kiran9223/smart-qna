@@ -1,9 +1,12 @@
 """Semantic similarity search using pgvector and Amazon Bedrock."""
 import uuid
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.core.bedrock import generate_embedding
+
+logger = logging.getLogger(__name__)
 
 
 async def find_similar_posts(
@@ -20,6 +23,7 @@ async def find_similar_posts(
     """
     embedding = await generate_embedding(query_text)
     if embedding is None:
+        logger.warning("Similarity skipped: embedding generation unavailable")
         return []
 
     embedding_str = "[" + ",".join(str(x) for x in embedding) + "]"
@@ -45,13 +49,20 @@ async def find_similar_posts(
         params = {"embedding": embedding_str, "limit": limit}
 
     result = await db.execute(stmt, params)
-
-    return [
+    rows = result.fetchall()
+    matches = [
         {
             "post_id": row.post_id,
             "title": row.title,
             "similarity": round(float(row.similarity), 3),
         }
-        for row in result.fetchall()
+        for row in rows
         if float(row.similarity) >= min_similarity
     ]
+    logger.info(
+        "Similarity query complete (candidates=%s, matches=%s, min_similarity=%.2f)",
+        len(rows),
+        len(matches),
+        min_similarity,
+    )
+    return matches

@@ -1,9 +1,11 @@
 """Amazon Bedrock client — generates text embeddings via Titan Embeddings."""
 import json
+import logging
 import boto3
 from app.config import settings
 
 _bedrock_client = None
+logger = logging.getLogger(__name__)
 
 
 def get_bedrock_client():
@@ -31,6 +33,19 @@ async def generate_embedding(text: str) -> list[float] | None:
             body=body,
         )
         result = json.loads(response["body"].read())
-        return result["embedding"]  # list of 1536 floats
+        embedding = result["embedding"]  # list of 1536 floats
+        logger.info(
+            "Bedrock embedding generated successfully (model=%s, input_chars=%s, dims=%s)",
+            settings.BEDROCK_MODEL_ID,
+            len(text),
+            len(embedding),
+        )
+        return embedding
     except Exception:
+        logger.exception(
+            "Bedrock embedding generation failed (model=%s, region=%s, input_chars=%s)",
+            settings.BEDROCK_MODEL_ID,
+            settings.AWS_REGION,
+            len(text),
+        )
         return None  # graceful fallback — similarity search skips silently
