@@ -91,6 +91,7 @@ jobs:
           CLOUDFRONT_DOMAIN: ${{ secrets.CLOUDFRONT_DOMAIN }}
           COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
           COGNITO_APP_CLIENT_ID: ${{ secrets.COGNITO_APP_CLIENT_ID }}
+          BEDROCK_MODEL_ID: ${{ secrets.BEDROCK_MODEL_ID }}
           S3_BUCKET_ATTACHMENTS: ${{ secrets.S3_FRONTEND_BUCKET != '' && 'smartqna-attachments' || 'smartqna-attachments' }}
           SQS_NOTIFICATION_QUEUE_URL: ${{ secrets.SQS_NOTIFICATION_QUEUE_URL }}
         run: |
@@ -101,6 +102,7 @@ jobs:
           CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN}
           COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
           COGNITO_APP_CLIENT_ID=${COGNITO_APP_CLIENT_ID}
+          BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID}
           S3_BUCKET_ATTACHMENTS=smartqna-attachments
           SQS_NOTIFICATION_QUEUE_URL=${SQS_NOTIFICATION_QUEUE_URL}
           EOF
